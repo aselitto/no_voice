@@ -90,13 +90,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Dynamic font size calculator based on text length
+    function calculateFontSize(text, maxSize = 14, minSize = 8) {
+        const length = text.length;
+        if (length <= 3) return maxSize;
+        if (length <= 5) return maxSize - 1;
+        if (length <= 7) return maxSize - 2;
+        if (length <= 10) return maxSize - 3;
+        return minSize;
+    }
+
     // Create quick phrase buttons (7x5 grid) - Text only with colors
     function createQuickPhrases() {
         quickPhrasesGrid.innerHTML = '';
         quickPhrases.forEach(phrase => {
             const btn = document.createElement('button');
             btn.className = `phrase-btn color-${phrase.color}`;
-            btn.innerHTML = `<div class="btn-text">${phrase.label}</div>`;
+            const fontSize = calculateFontSize(phrase.label);
+            btn.innerHTML = `<div class="btn-text" style="font-size: ${fontSize}px;">${phrase.label}</div>`;
             btn.addEventListener('click', () => speakText(phrase.text, btn));
             quickPhrasesGrid.appendChild(btn);
         });
@@ -113,13 +124,15 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (savedButtons[i]) {
                 const emoji = savedButtons[i].emoji || randomEmojis[i % randomEmojis.length];
-                const shortText = savedButtons[i].text.length > 15 
-                    ? savedButtons[i].text.substring(0, 15) + '...' 
+                const shortText = savedButtons[i].text.length > 12 
+                    ? savedButtons[i].text.substring(0, 12) + '...' 
                     : savedButtons[i].text;
+                
+                const fontSize = calculateFontSize(shortText, 12, 8);
                 
                 btn.innerHTML = `
                     <div class="emoji">${emoji}</div>
-                    <div class="label">${shortText}</div>
+                    <div class="label" style="font-size: ${fontSize}px;">${shortText}</div>
                 `;
                 
                 // Pass the voice name if set
@@ -368,11 +381,19 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const utterance = new SpeechSynthesisUtterance(text);
             
+            // Ensure voices are loaded
+            if (voices.length === 0) {
+                voices = synth.getVoices();
+            }
+            
             // First try to use custom voice name if provided
             if (customVoiceName) {
                 const customVoice = voices.find(voice => voice.name === customVoiceName);
                 if (customVoice) {
                     utterance.voice = customVoice;
+                    console.log('Using custom voice:', customVoice.name);
+                } else {
+                    console.log('Custom voice not found:', customVoiceName);
                 }
             } else {
                 // Otherwise use global voice if one is selected
@@ -381,6 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const selectedVoice = voices.find(voice => voice.name === selectedOption);
                     if (selectedVoice) {
                         utterance.voice = selectedVoice;
+                        console.log('Using global voice:', selectedVoice.name);
                     }
                 }
             }
