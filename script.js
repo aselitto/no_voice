@@ -79,15 +79,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize the app
     function init() {
+        // Load voices immediately
         loadVoices();
-        createQuickPhrases();
-        loadCustomButtons();
-        setupEventListeners();
         
-        // When voices are loaded, update the voice select dropdown
+        // Set up voice change listener for browsers that load voices asynchronously
         if (speechSynthesis.onvoiceschanged !== undefined) {
             speechSynthesis.onvoiceschanged = loadVoices;
         }
+        
+        // Force load voices after a short delay (fixes Chrome/Edge issues)
+        setTimeout(() => {
+            if (voices.length === 0) {
+                console.log('Forcing voice reload...');
+                loadVoices();
+            }
+        }, 100);
+        
+        createQuickPhrases();
+        loadCustomButtons();
+        setupEventListeners();
     }
 
     // Dynamic font size calculator based on text length
@@ -135,9 +145,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="label" style="font-size: ${fontSize}px;">${shortText}</div>
                 `;
                 
-                // Pass the voice name if set
-                const voiceName = savedButtons[i].voiceName;
-                btn.addEventListener('click', () => speakText(savedButtons[i].text, btn, voiceName));
+                // Pass the voice index if set
+                const voiceIndex = savedButtons[i].voiceIndex;
+                btn.addEventListener('click', () => speakText(savedButtons[i].text, btn, voiceIndex));
             } else {
                 btn.classList.add('empty');
                 btn.innerHTML = `
@@ -162,15 +172,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load available voices
     function loadVoices() {
         voices = synth.getVoices();
+        
+        if (voices.length === 0) {
+            console.log('No voices loaded yet');
+            return;
+        }
+        
+        console.log('Loaded voices:', voices.length);
+        
         voiceSelect.innerHTML = '<option value="">Default Voice</option>';
         modalVoiceSelect.innerHTML = '<option value="">Use Global Voice</option>';
         
-        voices.forEach(voice => {
+        voices.forEach((voice, index) => {
             // For global voice select
             const option1 = document.createElement('option');
             option1.textContent = `${voice.name} (${voice.lang})`;
-            option1.setAttribute('data-lang', voice.lang);
-            option1.setAttribute('data-name', voice.name);
+            option1.value = index; // Store the index as value
             
             if (voice.default) {
                 option1.textContent += ' — DEFAULT';
@@ -181,8 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // For modal voice select
             const option2 = document.createElement('option');
             option2.textContent = `${voice.name} (${voice.lang})`;
-            option2.setAttribute('data-lang', voice.lang);
-            option2.setAttribute('data-name', voice.name);
+            option2.value = index; // Store the index as value
             
             if (voice.default) {
                 option2.textContent += ' — DEFAULT';
@@ -199,21 +215,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (buttonData) {
             modalText.value = buttonData.text;
             
-            // Set the voice if one was saved
-            if (buttonData.voiceName) {
-                // Find and select the matching option
-                for (let i = 0; i < modalVoiceSelect.options.length; i++) {
-                    if (modalVoiceSelect.options[i].getAttribute('data-name') === buttonData.voiceName) {
-                        modalVoiceSelect.selectedIndex = i;
-                        break;
-                    }
-                }
+            // Set the voice if one was saved (using index now)
+            if (buttonData.voiceIndex !== undefined && buttonData.voiceIndex !== null && buttonData.voiceIndex !== '') {
+                modalVoiceSelect.value = buttonData.voiceIndex;
             } else {
-                modalVoiceSelect.selectedIndex = 0;
+                modalVoiceSelect.value = '';
             }
         } else {
             modalText.value = '';
-            modalVoiceSelect.selectedIndex = 0;
+            modalVoiceSelect.value = '';
         }
         
         editModal.classList.add('active');
@@ -238,13 +248,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedButtons = JSON.parse(localStorage.getItem('customButtons')) || [];
         const emoji = randomEmojis[editingIndex % randomEmojis.length];
         
-        // Get selected voice if any
-        const selectedVoiceName = modalVoiceSelect.selectedOptions[0]?.getAttribute('data-name');
+        // Get selected voice index if any
+        const selectedVoiceIndex = modalVoiceSelect.value;
         
         savedButtons[editingIndex] = { 
             emoji, 
             text,
-            voiceName: selectedVoiceName || null
+            voiceIndex: selectedVoiceIndex !== '' ? selectedVoiceIndex : null
         };
         localStorage.setItem('customButtons', JSON.stringify(savedButtons));
         
@@ -370,7 +380,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Speak text with visual feedback
-    function speakText(text, button, customVoiceName = null) {
+    function speakText(text, button, customVoiceIndex = null) {
         if (synth.speaking) {
             synth.cancel();
         }
@@ -386,23 +396,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 voices = synth.getVoices();
             }
             
-            // First try to use custom voice name if provided
-            if (customVoiceName) {
-                const customVoice = voices.find(voice => voice.name === customVoiceName);
-                if (customVoice) {
-                    utterance.voice = customVoice;
-                    console.log('Using custom voice:', customVoice.name);
+            // First try to use custom voice index if provided
+            if (customVoiceIndex !== null && customVoiceIndex !== undefined && customVoiceIndex !== '') {
+                const voiceIdx = parseInt(customVoiceIndex);
+                if (voices[voiceIdx]) {
+                    utterance.voice = voices[voiceIdx];
+                    console.log('Using custom voice:', voices[voiceIdx].name);
                 } else {
-                    console.log('Custom voice not found:', customVoiceName);
+                    console.log('Custom voice index not found:', customVoiceIndex);
                 }
             } else {
                 // Otherwise use global voice if one is selected
-                const selectedOption = voiceSelect.selectedOptions[0]?.getAttribute('data-name');
-                if (selectedOption) {
-                    const selectedVoice = voices.find(voice => voice.name === selectedOption);
-                    if (selectedVoice) {
-                        utterance.voice = selectedVoice;
-                        console.log('Using global voice:', selectedVoice.name);
+                const selectedIndex = voiceSelect.value;
+                if (selectedIndex !== '') {
+                    const voiceIdx = parseInt(selectedIndex);
+                    if (voices[voiceIdx]) {
+                        utterance.voice = voices[voiceIdx];
+                        console.log('Using global voice:', voices[voiceIdx].name);
                     }
                 }
             }
