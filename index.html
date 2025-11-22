@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Soundboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header with Text to Speech -->
+        <header class="header">
+            <h1>🎤 Voice Board</h1>
+            <div class="text-to-speech">
+                <div class="textarea-wrapper">
+                    <textarea id="textInput" placeholder="Type anything to speak..."></textarea>
+                    <button id="historyBtn" class="history-btn" title="History">📜</button>
+                    <div id="historyDropdown" class="history-dropdown">
+                        <div class="history-header">
+                            <span>History</span>
+                            <button id="clearHistoryBtn" class="clear-history">Clear All</button>
+                        </div>
+                        <div id="historyList" class="history-list">
+                            <!-- History items will be added here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="tts-controls">
+                    <select id="voiceSelect" class="voice-select">
+                        <option value="">Select Voice</option>
+                    </select>
+                    <button id="speakBtn" class="speak-btn">🔊 Speak</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Quick Phrases Grid (7x5) -->
+        <section class="quick-phrases">
+            <h2>Word Builder</h2>
+            <div class="grid-7x5" id="quickPhrasesGrid">
+                <!-- 35 quick phrase buttons will be added here -->
+            </div>
+        </section>
+
+        <!-- Custom Buttons Grid (2x5) -->
+        <section class="custom-buttons">
+            <h2>Custom Buttons</h2>
+            <div class="grid-2x5" id="customButtonsGrid">
+                <!-- 10 custom button slots will be added here -->
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal for editing custom buttons -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3>Custom Button</h3>
+            <textarea id="modalText" placeholder="What should this button say?"></textarea>
+            <label for="modalVoiceSelect" style="font-size: 14px; color: #666; margin-top: 8px; display: block;">
+                Voice (optional - uses global voice if not set):
+            </label>
+            <select id="modalVoiceSelect" class="voice-select" style="width: 100%; margin-bottom: 12px;">
+                <option value="">Use Global Voice</option>
+            </select>
+            <div class="modal-buttons">
+                <button id="saveBtn" class="btn-save">Save</button>
+                <button id="clearBtn" class="btn-clear">Clear</button>
+                <button id="cancelBtn" class="btn-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
